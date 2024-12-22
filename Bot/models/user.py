@@ -13,9 +13,17 @@ class UserRights(enum.Enum):
     ADMIN = 1,
     UNREGISTERED = 2
 
-class UserData():
-    code: int
-    money: int = 0
+class UserData:
+    def __init__(self, code: int, money: int = 0):
+        self.code = code
+        self.money = money
+
+    def to_dict(self):
+        return {'code': self.code, 'money': self.money}
+
+    @staticmethod
+    def from_dict(data):
+        return UserData(code=data['code'], money=data.get('money', 0))
 
 class User():
     def __init__(self, id: str, bot: Bot) -> None:
@@ -23,7 +31,10 @@ class User():
         self.bot = bot
         self.data = UserData()
         self.tree = StateTree(self)
-        self.rights = UserRights.UNREGISTERED
+        self.rights  = UserRights.UNREGISTERED
+    
+    async def get_chat(self):
+        return await self.bot.get_chat(self.id)
 
     async def setup_unregistered(self):
         self.rights = UserRights.UNREGISTERED
@@ -43,9 +54,11 @@ class User():
         amm = AdminMainMenu(self.tree)
         reg_user = FindUser(self.tree)
         edit_unreg_user = EditUnregisteredUser(self.tree)
+        edit_reg_user = EditRegisteredUser(self.tree)
         self.tree.add_state(amm)
         self.tree.add_state(reg_user)
         self.tree.add_state(edit_unreg_user)
+        self.tree.add_state(edit_reg_user)
 
     async def process_message(self, message: Message):
         await self.tree.execute_current_state(message)

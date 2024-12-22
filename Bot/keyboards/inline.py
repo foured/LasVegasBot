@@ -34,6 +34,17 @@ admin_unregistered_user_menu_kb = ReplyKeyboardMarkup(
     one_time_keyboard=True    
 )
 
+admin_registered_user_menu_kb = ReplyKeyboardMarkup(
+    keyboard=[
+        [
+            KeyboardButton(text='Пополнить баланс'),
+            KeyboardButton(text='Задать баланс')
+        ]
+    ],
+    resize_keyboard=True,
+    one_time_keyboard=True    
+)
+
 registered_main_menu = ReplyKeyboardMarkup(
     keyboard=[
         [
