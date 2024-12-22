@@ -8,6 +8,7 @@ async def main():
     bot = Bot('7561117864:AAF4hh7IZ_zHIIvI4OULfGk6k_FrOhILNWU')
     dp = Dispatcher()
     DB.initialize(bot)
+    await DB.load()
     dp.include_routers(
         user_commands.router
     )

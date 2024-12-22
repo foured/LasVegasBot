@@ -26,12 +26,12 @@ class UserData:
         return UserData(code=data['code'], money=data.get('money', 0))
 
 class User():
-    def __init__(self, id: str, bot: Bot) -> None:
+    def __init__(self, id: str, bot: Bot, data: UserData = None, rights: UserRights = UserRights.UNREGISTERED) -> None:
         self.id = id
         self.bot = bot
-        self.data = UserData()
+        self.data = data if data else UserData(-1)
         self.tree = StateTree(self)
-        self.rights  = UserRights.UNREGISTERED
+        self.rights = rights
     
     async def get_chat(self):
         return await self.bot.get_chat(self.id)
@@ -65,3 +65,24 @@ class User():
 
     async def enable_first_state(self) -> None:
         await self.tree.states[0].enable()
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'data': self.data.to_dict(),
+            'rights': self.rights.name
+        }
+    
+    @staticmethod
+    async def from_dict(data, bot: Bot):
+        user_data = UserData.from_dict(data['data'])
+        rights = UserRights[data['rights']]
+        user = User(id=data['id'], bot=bot, data=user_data, rights=rights)
+        match user.rights:
+            case UserRights.UNREGISTERED:
+                await user.setup_unregistered()
+            case UserRights.USER:
+                await user.setup_user()
+            case UserRights.ADMIN:
+                await user.setup_admin()
+        return user
