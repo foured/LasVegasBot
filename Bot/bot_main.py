@@ -12,6 +12,8 @@ async def main():
     dp.include_routers(
         user_commands.router
     )
+    
+    asyncio.create_task(DB.save_periodically(30))
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)

@@ -3,6 +3,8 @@ from aiogram import Bot
 from models.uniq_codes import CodeGenerator
 import json
 from config import save_filename
+import asyncio
+from datetime import datetime
 
 class DB():
     users: list[User] = []
@@ -51,3 +53,11 @@ class DB():
     @staticmethod
     async def load():
         await DB.load_from_file(save_filename)
+
+    @staticmethod
+    async def save_periodically(interval: int):
+        while True:
+            await asyncio.sleep(interval)
+            DB.save()
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"DB saved at {current_time}.")
