@@ -5,6 +5,7 @@ from state_machine.state_tree import StateTree
 from state_machine.states.unregistered import *
 from state_machine.states.admin import *
 from state_machine.states.registered import *
+from models.uniq_codes import CodeGenerator
 
 import enum
 
@@ -78,6 +79,7 @@ class User():
         user_data = UserData.from_dict(data['data'])
         rights = UserRights[data['rights']]
         user = User(id=data['id'], bot=bot, data=user_data, rights=rights)
+        CodeGenerator.codes.add(user.data.code)
         match user.rights:
             case UserRights.UNREGISTERED:
                 await user.setup_unregistered()
