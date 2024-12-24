@@ -1,10 +1,11 @@
 import asyncio
 
 from aiogram import Bot, Dispatcher
-from handlers import user_commands
-from models.db import DB
+from Bot.handlers import user_commands
+from Bot.models.db import DB
 
-async def main():
+async def bot_main():
+    print("Starting bot")
     bot = Bot('7561117864:AAF4hh7IZ_zHIIvI4OULfGk6k_FrOhILNWU')
     dp = Dispatcher()
     DB.initialize(bot)
@@ -19,6 +20,6 @@ async def main():
     await dp.start_polling(bot)
 
 
-if __name__ == '__main__':
-    print("Bot is running.")
-    asyncio.run(main())
+# if __name__ == '__main__':
+#     print("Bot is running.")
+#     asyncio.run(bot_main())

@@ -1,7 +1,8 @@
-from state_machine.state import State, StateBundle
-from state_machine.state_tree import StateTree
+from Bot.state_machine.state import State, StateBundle
+from Bot.state_machine.state_tree import StateTree
 from aiogram.types import Message
-from keyboards.inline import *
+from Bot.keyboards.inline import *
+from shared import Shared
 
 class RegisteredMainMenu(State):
     def __init__(self, tree: StateTree) -> None:
@@ -10,7 +11,8 @@ class RegisteredMainMenu(State):
     async def enable(self, bundle: StateBundle = None) -> None:
         await self.tree.user.bot.send_message(
             chat_id=self.tree.user.id,
-            text='Регистарция пройдена успешно!',
+            text='Вы в меню',
+            reply_markup=registered_main_menu
         )
         await self.send_menu()
 
@@ -18,6 +20,8 @@ class RegisteredMainMenu(State):
         pass
 
     async def process_message(self, message: Message) -> None:
+        from Bot.models.user import UserSubstate
+
         text = message.text
         if text == 'Баланс':
             await self.tree.user.bot.send_message(
@@ -34,6 +38,16 @@ class RegisteredMainMenu(State):
                 parse_mode='HTML'
             )
             await self.send_menu()
+        elif text == 'Выбор автомата':
+            if self.tree.user.substate == UserSubstate.AFK:
+                await self.tree.set_state_by_name('choose_slot_state')
+            else:
+                await self.tree.user.bot.send_message(
+                    chat_id=self.tree.user.id,
+                    text=f'Вы уже играете',
+                    reply_markup=registered_main_menu
+                ) 
+
         else:
             await self.tree.user.bot.send_message(
                 chat_id=self.tree.user.id,
@@ -47,3 +61,62 @@ class RegisteredMainMenu(State):
             text='Для дальнейших взаимодействий жмите на кнопки.',
             reply_markup=registered_main_menu
         )
+
+class ChooseSlotState(State):
+    def __init__(self, tree: 'StateTree') -> None:
+        super().__init__('choose_slot_state', tree)
+
+    async def enable(self, bundle: StateBundle = None) -> None:
+        free = Shared.server.get_free_machines_ids()
+        if len(free) == 0:
+            await self.tree.user.bot.send_message(
+                chat_id=self.tree.user.id,
+                text='Сейчас нет свобобных автоматов.',
+            )
+            await self.tree.set_state_by_name('registered_main_menu')
+
+        else:
+            machines_keyboard_builder = ReplyKeyboardBuilder()
+            for i in range(0, len(free), 3):
+                row = free[i:i+3]
+                machines_keyboard_builder.row(*[KeyboardButton(text=str(fid)) for fid in row])
+            machines_keyboard_builder.button(text='Назад')
+
+            await self.tree.user.bot.send_message(
+                chat_id=self.tree.user.id,
+                text='Выберите автомат',
+                reply_markup=machines_keyboard_builder.as_markup(resize_keyboard=True, one_time_keyboard=True)
+            )
+
+
+    async def disable(self) -> None:
+        pass
+
+    async def process_message(self, message: Message) -> None:
+        from Bot.models.user import UserSubstate
+
+        text = message.text.lower()
+        if text == 'назад':
+            await self.tree.set_state_by_name('registered_main_menu')
+        elif text.isdigit():
+            fid = int(text)
+            if Shared.server.check_free(fid):
+                await self.tree.user.bot.send_message(
+                    chat_id=self.tree.user.id,
+                    text='Автомат активирован',
+                )
+                self.tree.user.substate = UserSubstate.PLAYING
+                await self.tree.set_state_by_name('registered_main_menu')
+            else:
+                await self.tree.user.bot.send_message(
+                    chat_id=self.tree.user.id,
+                    text=f'Автомат с таким номером не активен или не существует',
+                )
+                await self.enable()
+
+        else:
+            await self.tree.user.bot.send_message(
+                chat_id=self.tree.user.id,
+                text=f'Неисвестная команда',
+            )
+            await self.enable()

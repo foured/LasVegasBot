@@ -1,14 +1,15 @@
-from models.user import User
+from Bot.models.user import User
+from Bot.models.uniq_codes import CodeGenerator
+from config import SAVE_FILENAME
 from aiogram import Bot
-from models.uniq_codes import CodeGenerator
 import json
-from config import save_filename
 import asyncio
 from datetime import datetime
 
 class DB():
     users: list[User] = []
     bot: Bot
+    do_log: bool = True
 
     @staticmethod
     async def get_user(id: str) -> User:
@@ -48,16 +49,17 @@ class DB():
 
     @staticmethod
     def save():
-        DB.save_to_file(save_filename)
+        DB.save_to_file(SAVE_FILENAME)
 
     @staticmethod
     async def load():
-        await DB.load_from_file(save_filename)
+        await DB.load_from_file(SAVE_FILENAME)
 
     @staticmethod
     async def save_periodically(interval: int):
         while True:
             await asyncio.sleep(interval)
             DB.save()
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"DB saved at {current_time}.")
+            if DB.do_log:
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print(f"DB saved at {current_time}.")

@@ -1,42 +1,49 @@
-import socket
-import json
+import asyncio
 from config import *
+import json
+import enum
+
+class MachineState(enum.Enum):
+    UNAUTORIZED = 0,
+    FREE = 1,
+    BUSY = 2
 
 class Connection():
-    def __init__(self, server: 'Server', client_socket: socket, addr):
-        self.client_socket = client_socket
-        self.addr = addr
+    def __init__(self, server: 'Server', reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         self.server = server
-        self.authorized = False
+        self.reader = reader
+        self.writer = writer
+        self.addr = writer.get_extra_info('peername')
+        self.state = MachineState.UNAUTORIZED
+        self.id = None
+        print(f'Connected by {self.addr}')
 
-    def run(self):
-        from Net.server import Server
+    async def run(self):
         try:
             while True:
-                data = self.client_socket.recv(BUFFERSIZE)
+                data = await self.reader.read(BUFFERSIZE)
                 if not data:
                     print(f'Client {self.addr} disconnected')
                     break
-                self.on_msg(data)
-
+                await self.on_msg(data)
+            
         except Exception as e:
-            print(f'Error to handle client: {e}')
-
+            print(f'Error handling client {self.addr}: {e}')
+        
         finally:
-            self.server.connections.remove(self)
-            self.client_socket.close()
-
-    def on_msg(self, data: bytearray):
-        from Net.server import Server
+            if self.state != MachineState.UNAUTORIZED:
+                self.server.connections.remove(self)
+            self.writer.close()
+            await self.writer.wait_closed()
+    
+    async def on_msg(self, data: bytearray):
         json_data = json.loads(data)
         if json_data['header'] == 'HANDSHAKE':
-            self.authorized = True
+            self.state = MachineState.FREE
             self.id = json_data['id']
             for con in self.server.connections:
                 if con.id == self.id:
-                    print('Warning! Two clients has same id!')
+                    print('Warning! Two clients have the same id!')
 
             self.server.connections.append(self)
-
-        
-    
+        print(json_data)

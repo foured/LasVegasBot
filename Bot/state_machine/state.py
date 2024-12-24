@@ -3,7 +3,9 @@ from aiogram.types import Message
 #from state_machine.state_tree import StateTree
 
 class StateBundle():
-    code: int = None
+    def __init__(self):
+        self.code: int = None
+        self.return_to = None
 
 class State():
     def __init__(self, name: str, tree: 'StateTree') -> None:

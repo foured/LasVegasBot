@@ -1,30 +1,31 @@
-import socket
+import asyncio
+from Net.connection import Connection, MachineState
 from config import *
-from Net.pockets import *
-from Net.connection import Connection
 
 class Server():
     def __init__(self):
-        self.connections : list[Connection] = []
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_address = (HOST, PORT)
-        self.socket.bind(server_address)
-        print('Listening on:', server_address)
-        self.socket.listen(MAX_CONNECTIONS)
+        self.connections: list[Connection] = []
 
-    def run(self):
-        try:
-            while True:
-                client_socket, addr = self.socket.accept()
-                con = Connection(self, client_socket, addr)
-                print(f'Connected by {addr}')
-                con.run()
+    async def run(self):
+        server = await asyncio.start_server(self.handle_client, HOST, PORT)
+        async with server:
+            print(f'Listening on {HOST}:{PORT}')
+            await server.serve_forever()
 
-        except Exception as e:
-            print(f'Exception: {e}')
-        finally:
-            self.socket.close()
+    async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+        connection = Connection(self, reader, writer)
+        await connection.run()
 
-    def send_all(self, msg):
+    async def send_all(self, msg):
         for con in self.connections:
-            con.client_socket.sendall(msg)
+            con.writer.write(msg)
+            await con.writer.drain()
+
+    def get_free_machines_ids(self):
+        return [con.id for con in self.connections if con.state == MachineState.FREE]
+    
+    def check_free(self, id: int) -> bool:
+        for con in self.connections:
+            if con.id == id and con.state == MachineState.FREE:
+                return True
+        return False

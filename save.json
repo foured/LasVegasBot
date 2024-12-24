@@ -2,16 +2,26 @@
     {
         "id": 838660805,
         "data": {
-            "code": 472,
+            "code": 206,
             "money": 0
+        },
+        "luck": {
+            "winchance": 0.35,
+            "jackpot": 0.07,
+            "monkey": 0.05
         },
         "rights": "ADMIN"
     },
     {
         "id": 7452202657,
         "data": {
-            "code": 276,
+            "code": 245,
             "money": 0
+        },
+        "luck": {
+            "winchance": 0.2,
+            "jackpot": 0.2,
+            "monkey": 0.2
         },
         "rights": "USER"
     }

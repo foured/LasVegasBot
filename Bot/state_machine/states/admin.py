@@ -1,7 +1,7 @@
-from state_machine.state import State, StateBundle
-from state_machine.state_tree import StateTree
+from Bot.state_machine.state import State, StateBundle
+from Bot.state_machine.state_tree import StateTree
 from aiogram.types import Message
-from keyboards.inline import *
+from Bot.keyboards.inline import *
 
 import enum
 
@@ -20,8 +20,8 @@ class AdminMainMenu(State):
         ...
 
     async def process_message(self, message: Message) -> None:
-        from models.db import DB
-        from models.user import UserRights
+        from Bot.models.db import DB
+        from Bot.models.user import UserRights
 
         if message.text == 'Найти пользователя':
             await self.tree.set_state_by_name('admin_find_user')
@@ -42,7 +42,8 @@ class AdminMainMenu(State):
                 chat_id=self.tree.user.id,
                 text=f'Выберите опцию',
                 reply_markup=admin_main_menu_kb
-            )  
+            )
+
         else:
             await self.tree.user.bot.send_message(
                 chat_id=self.tree.user.id,
@@ -79,9 +80,10 @@ class FindUser(State):
         ...
 
     async def process_message(self, message: Message) -> None:
-        from models.user import UserRights
-        from models.db import DB
-        from state_machine.state_tree import StateTree
+        from Bot.models.user import UserRights
+        from Bot.models.db import DB
+        from Bot.state_machine.state_tree import StateTree
+
         text : str = message.text
         if text.isdigit() and 0 <= int(text) <= 999:
             code = int(text)
@@ -152,7 +154,7 @@ class EditUnregisteredUser(State):
         self.code = bundle.code
         await self.tree.user.bot.send_message(
                 chat_id=self.tree.user.id,
-                text=f'Выберите действие для 🔑<b>{self.code}</b> (надо будет добавить еще настройки подкрутки удачи)',
+                text=f'Выберите действие для 🔑<b>{self.code}</b>',
                 reply_markup=admin_unregistered_user_menu_kb,
                 parse_mode='HTML'
             )  
@@ -161,7 +163,8 @@ class EditUnregisteredUser(State):
         ...
 
     async def process_message(self, message: Message) -> None:
-        from models.db import DB
+        from Bot.models.db import DB
+
         text = message.text
         if text == 'Зарегистрировать':
             await self.tree.user.bot.send_message(
@@ -170,10 +173,21 @@ class EditUnregisteredUser(State):
                 parse_mode='HTML'
             )
             user = DB.get_user_by_code(self.code)
+            await self.tree.user.bot.send_message(
+                chat_id=user.id,
+                text=f'Регистарция пройдена успешно!',
+                parse_mode='HTML'
+            )
             await user.setup_user()
             await user.enable_first_state()
             await self.tree.set_state_by_name('admin_main_menu')
-              
+        
+        elif text == 'Изменить удачу':
+            bundle = StateBundle()
+            bundle.code = self.code
+            bundle.return_to = self.name
+            await self.tree.set_state_by_name('admin_change_luck', bundle)
+
         elif text == 'Вернуться в меню':
             await self.tree.set_state_by_name('admin_main_menu')
         else:
@@ -221,7 +235,8 @@ class EditRegisteredUser(State):
         ...
 
     async def process_message(self, message: Message) -> None:
-        from models.db import DB
+        from Bot.models.db import DB
+
         text = message.text
         if text == 'Пополнить баланс':
             await self.tree.user.bot.send_message(
@@ -239,7 +254,24 @@ class EditRegisteredUser(State):
             )
             self.substate = EditRegisteredUser.Substate.FORCE_SET
 
-        elif text == 'Вернуться в меню':
+        elif text == 'Посмотреть удачу':
+            user = DB.get_user_by_code(self.code)
+            await self.tree.user.bot.send_message(
+                chat_id=self.tree.user.id,
+                text=f'3 штучки: <b>{user.luck.winchance}</b>\n'
+                     f'Джекпот: <b>{user.luck.jackpot}</b>\n'
+                     f'Макака: <b>{user.luck.monkey}</b>',
+                reply_markup=admin_registered_user_menu_kb,
+                parse_mode='HTML'
+            ) 
+
+        elif text == 'Изменить удачу':
+            bundle = StateBundle()
+            bundle.code = self.code
+            bundle.return_to = self.name
+            await self.tree.set_state_by_name('admin_change_luck', bundle)
+
+        elif text == 'Назад' or text == 'Вернуться в меню':
             await self.tree.set_state_by_name('admin_main_menu')
 
         elif self.substate != EditRegisteredUser.Substate.MENU:
@@ -286,3 +318,104 @@ class EditRegisteredUser(State):
                 reply_markup=admin_registered_user_menu_kb,
             )  
 
+
+
+
+
+
+
+
+
+
+
+
+class ChangeLuck(State):
+
+    class Substate(enum.Enum):
+        MENU = 0,
+        INPUT = 1
+
+    def __init__(self, tree):
+        super().__init__('admin_change_luck', tree)
+
+    async def enable(self, bundle: StateBundle = None) -> None:
+        if bundle == None:
+            print('Didn`t reciev a bundle in admin_change_luck!')
+        self.code = bundle.code
+        self.return_to = bundle.return_to
+        self.substate = ChangeLuck.Substate.MENU
+
+        await self.tree.user.bot.send_message(
+            chat_id=self.tree.user.id,
+            text=f'Выберите действие',
+            reply_markup=admin_change_luck_kb
+        )  
+
+    async def disable(self) -> None:
+        pass
+
+    async def process_message(self, message: Message) -> None:
+        text = message.text.lower()
+
+        if self.substate == ChangeLuck.Substate.MENU:
+            if text == 'задать руками':
+                self.substate = ChangeLuck.Substate.INPUT
+                await self.tree.user.bot.send_message(
+                    chat_id=self.tree.user.id,
+                    text=f'Введите данные по шаблону\n(сумма макаки и джекпота: <b>PLACEHOLDER</b>): \n<b>[шанс на 3] [шанс на джекпот] [шанс на макаку]</b>\nПример:',
+                    parse_mode='HTML'
+                )
+
+                await self.tree.user.bot.send_message(
+                    chat_id=self.tree.user.id,
+                    text=f'0.1 0.1 0.1',
+                )
+
+            elif text == 'назад':
+                bundle = StateBundle()
+                bundle.code = self.code
+                await self.tree.set_state_by_name(self.return_to, bundle)
+
+            else:
+                await self.tree.user.bot.send_message(
+                    chat_id=self.tree.user.id,
+                    text=f'Неизвестная команда',
+                    reply_markup=admin_change_luck_kb,
+                ) 
+        else:
+            self.substate = ChangeLuck.Substate.MENU
+            fs = ChangeLuck.parse_three_floats(text)
+            if fs == None:
+                await self.tree.user.bot.send_message(
+                    chat_id=self.tree.user.id,
+                    text=f'Ошибка в введенных данных',
+                    reply_markup=admin_change_luck_kb,
+                )
+            else:
+                from Bot.models.user import UserLuck
+                from Bot.models.db import DB
+
+                f1, f2, f3 = fs
+                user = DB.get_user_by_code(self.code)
+                user.luck = UserLuck(f1, f2, f3)
+                await self.tree.user.bot.send_message(
+                    chat_id=self.tree.user.id,
+                    text=f'Данные установлены',
+                )
+                bundle = StateBundle()
+                bundle.code = self.code
+                await self.tree.set_state_by_name(self.return_to, bundle)
+
+
+    def parse_three_floats(input_string: str):
+        try:
+            parts = input_string.split()
+            
+            if len(parts) != 3:
+                return None
+            
+            floats = tuple(float(part) for part in parts)
+            
+            return floats
+        except ValueError:
+            return None

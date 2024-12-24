@@ -1,7 +1,7 @@
-from state_machine.state import State, StateBundle
-from state_machine.state_tree import StateTree
+from Bot.state_machine.state import State, StateBundle
+from Bot.state_machine.state_tree import StateTree
 from aiogram.types import Message
-from config import password
+from config import PASSWORD
 
 class UnregisteredWelcome(State):
     def __init__(self, tree: StateTree) -> None:
@@ -19,8 +19,7 @@ class UnregisteredWelcome(State):
         pass
 
     async def process_message(self, message: Message) -> None:
-        from models.db import DB
-        if message.text == password.lower():
+        if message.text == PASSWORD.lower():
             await self.tree.user.bot.send_message(
                 chat_id=self.tree.user.id,
                 text=f'Права администратора выданы.',

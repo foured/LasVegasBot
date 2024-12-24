@@ -1,4 +1,4 @@
-from state_machine.state import State, StateBundle
+from Bot.state_machine.state import State, StateBundle
 from aiogram.types import Message
 
 class StateTree():

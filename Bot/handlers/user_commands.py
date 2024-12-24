@@ -1,9 +1,8 @@
 from aiogram import Router
-
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
-from models.db import DB
-from models.user import User
+from Bot.models.db import DB
+from Bot.models.user import User
 
 db = DB()
 
