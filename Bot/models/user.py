@@ -80,11 +80,13 @@ class User():
         edit_unreg_user = EditUnregisteredUser(self.tree)
         edit_reg_user = EditRegisteredUser(self.tree)
         change_luck = ChangeLuck(self.tree)
+        send_to_all = SendMessageToAllMenu(self.tree)
         self.tree.add_state(amm)
         self.tree.add_state(reg_user)
         self.tree.add_state(edit_unreg_user)
         self.tree.add_state(edit_reg_user)
         self.tree.add_state(change_luck)
+        self.tree.add_state(send_to_all)
 
     async def process_message(self, message: Message):
         await self.tree.execute_current_state(message)

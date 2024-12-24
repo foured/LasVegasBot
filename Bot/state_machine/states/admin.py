@@ -44,6 +44,9 @@ class AdminMainMenu(State):
                 reply_markup=admin_main_menu_kb
             )
 
+        elif message.text == 'Отправить сообщение всем':
+            await self.tree.set_state_by_name('admin_send_message_to_all')
+
         else:
             await self.tree.user.bot.send_message(
                 chat_id=self.tree.user.id,
@@ -271,6 +274,22 @@ class EditRegisteredUser(State):
             bundle.return_to = self.name
             await self.tree.set_state_by_name('admin_change_luck', bundle)
 
+        elif text == 'Заблокировать':
+            user = DB.get_user_by_code(self.code)
+            await self.tree.user.bot.send_message(
+                chat_id=user.id,
+                text='Ой!',
+            )
+            await user.setup_unregistered()
+            await user.enable_first_state()
+
+            await user.bot.send_message(
+                chat_id=self.tree.user.id,
+                text=f'Пользовотель заблокирован',
+            ) 
+
+            await self.tree.set_state_by_name('admin_main_menu')
+
         elif text == 'Назад' or text == 'Вернуться в меню':
             await self.tree.set_state_by_name('admin_main_menu')
 
@@ -419,3 +438,46 @@ class ChangeLuck(State):
             return floats
         except ValueError:
             return None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+class SendMessageToAllMenu(State):
+    def __init__(self, tree):
+        super().__init__('admin_send_message_to_all', tree)
+
+    async def enable(self, bundle: StateBundle = None) -> None:
+        await self.tree.user.bot.send_message(
+            chat_id=self.tree.user.id,
+            text=f'Введите текст для отправки',
+            reply_markup=return_to_menu_kb
+        )
+
+    async def disable(self) -> None:
+        pass
+
+    async def process_message(self, message: Message) -> None:
+        from Bot.models.db import DB
+
+        if message.text != 'Вернуться в меню':
+            for user in DB.users:
+                await self.tree.user.bot.send_message(
+                    chat_id=user.id,
+                    text=f'<b>Cообщение:</b> {message.text}',
+                    parse_mode='HTML'
+                )
+
+        await self.tree.set_state_by_name('admin_main_menu')

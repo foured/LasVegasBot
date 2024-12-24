@@ -51,6 +51,9 @@ admin_registered_user_menu_kb = ReplyKeyboardMarkup(
             KeyboardButton(text='Изменить удачу')
         ],
         [
+            KeyboardButton(text='Заблокировать')
+        ],
+        [
             KeyboardButton(text='Назад')
         ]
     ],
