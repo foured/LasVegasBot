@@ -5,6 +5,7 @@ from config import *
 class Server():
     def __init__(self):
         self.connections: list[Connection] = []
+        self.statistics: int = 0
 
     async def run(self):
         server = await asyncio.start_server(self.handle_client, HOST, PORT)
@@ -29,3 +30,9 @@ class Server():
             if con.id == id and con.state == MachineState.FREE:
                 return True
         return False
+
+    def get_connectin(self, id) -> Connection:
+        for con in self.connections:
+            if con.id == id:
+                return con
+        return None

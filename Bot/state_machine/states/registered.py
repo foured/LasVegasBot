@@ -26,7 +26,7 @@ class RegisteredMainMenu(State):
         if text == 'Баланс':
             await self.tree.user.bot.send_message(
                 chat_id=self.tree.user.id,
-                text=f'Ваш баланс: 💰<b>{self.tree.user.data.money}</b>. Ого!\n Для его пополнения пройдите на кассу.',
+                text=f'Ваш баланс: 💰<b>{self.tree.user.data.money}</b>. Ого!\nДля его пополнения пройдите на кассу.',
                 parse_mode='HTML'
             )
             await self.send_menu()
@@ -101,6 +101,15 @@ class ChooseSlotState(State):
         elif text.isdigit():
             fid = int(text)
             if Shared.server.check_free(fid):
+                from Net.pockets import UserConnection
+                from Net.connection import MachineState
+
+                user = self.tree.user
+                pocket = UserConnection(user.data.code, user.data.money, user.luck.winchance, user.luck.jackpot, user.luck.monkey)
+                connection = Shared.server.get_connectin(fid)
+                connection.writer.write(pocket.to_bytearray())
+                connection.state = MachineState.BUSY
+                await connection.writer.drain()
                 await self.tree.user.bot.send_message(
                     chat_id=self.tree.user.id,
                     text='Автомат активирован',

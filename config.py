@@ -22,12 +22,6 @@ class SlotConfig:
     winchance: float
     combinations: List[Combination]
 
-@dataclass
-class UserLuck:
-    winchance: float
-    j_probability: float
-    m_probability: float
-
 class ConfigManager:
     luck_config: SlotConfig = None
 
@@ -48,7 +42,8 @@ class ConfigManager:
         )
 
     @staticmethod
-    def default_luck() -> UserLuck:
+    def default_luck():
+        from Bot.models.user import UserLuck
         j, m = 0.07, 0.07
         for comb in ConfigManager.luck_config.combinations:
             if comb.cellType == 4:
