@@ -6,16 +6,12 @@ class HandShake():
         self.id = id
 
 class UserConnection():
-    def __init__(self, code, money, winchance, jackpot, monkey):
+    def __init__(self, code, money, winchance):
         self.header = "USER_CONNECTION"
         self.data = {
             "code": code,
-            "money": money
-        }
-        self.luck = {
-            "winchance": winchance,
-            "jackpot": jackpot,
-            "monkey": monkey
+            "money": money,
+            "winchance": winchance
         }
 
     def to_json(self):

@@ -1,28 +1,20 @@
 [
     {
-        "id": 7452202657,
-        "data": {
-            "code": 333,
-            "money": 12400
-        },
-        "luck": {
-            "winchance": 0.35,
-            "jackpot": 0.07,
-            "monkey": 0.05
-        },
-        "rights": "USER"
-    },
-    {
         "id": 838660805,
         "data": {
-            "code": 3,
-            "money": 0
+            "code": 461,
+            "money": 1000
         },
-        "luck": {
-            "winchance": 0.35,
-            "jackpot": 0.07,
-            "monkey": 0.05
-        },
+        "winchance": 0.25,
         "rights": "ADMIN"
+    },
+    {
+        "id": 7452202657,
+        "data": {
+            "code": 232,
+            "money": 1000
+        },
+        "winchance": 0.25,
+        "rights": "USER"
     }
 ]

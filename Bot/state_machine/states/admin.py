@@ -2,6 +2,7 @@ from Bot.state_machine.state import State, StateBundle
 from Bot.state_machine.state_tree import StateTree
 from aiogram.types import Message
 from Bot.keyboards.inline import *
+from config import WINCHANCE
 
 import enum
 
@@ -35,7 +36,8 @@ class AdminMainMenu(State):
                     text=f'Пользователь @{chat.username} ({chat.full_name})\n'
                         f'Код: 🔑<b>{user.data.code}</b>\n'
                         f'Статус: 💼<b>{user_status}</b>\n'
-                        f'Баланс: 💰<b>{user.data.money}</b>',
+                        f'Баланс: 💰<b>{user.data.money}</b>\n'
+                        f'Удача: 🍀<b>{user.winchance}</b>',
                     parse_mode='HTML'
                 )
             await self.tree.user.bot.send_message(
@@ -261,9 +263,7 @@ class EditRegisteredUser(State):
             user = DB.get_user_by_code(self.code)
             await self.tree.user.bot.send_message(
                 chat_id=self.tree.user.id,
-                text=f'3 штучки: <b>{user.luck.winchance}</b>\n'
-                     f'Джекпот: <b>{user.luck.jackpot}</b>\n'
-                     f'Макака: <b>{user.luck.monkey}</b>',
+                text=f'Шанс на победу: {user.winchance} (дефолт: {WINCHANCE})',
                 reply_markup=admin_registered_user_menu_kb,
                 parse_mode='HTML'
             ) 
@@ -381,13 +381,7 @@ class ChangeLuck(State):
                 self.substate = ChangeLuck.Substate.INPUT
                 await self.tree.user.bot.send_message(
                     chat_id=self.tree.user.id,
-                    text=f'Введите данные по шаблону\n(сумма макаки и джекпота: <b>PLACEHOLDER</b>): \n<b>[шанс на 3] [шанс на джекпот] [шанс на макаку]</b>\nПример:',
-                    parse_mode='HTML'
-                )
-
-                await self.tree.user.bot.send_message(
-                    chat_id=self.tree.user.id,
-                    text=f'0.1 0.1 0.1',
+                    text=f'Введите шанс на победу (дефолт: {WINCHANCE})',
                 )
 
             elif text == 'назад':
@@ -403,7 +397,7 @@ class ChangeLuck(State):
                 ) 
         else:
             self.substate = ChangeLuck.Substate.MENU
-            fs = ChangeLuck.parse_three_floats(text)
+            fs = ChangeLuck.parse_float(text)
             if fs == None:
                 await self.tree.user.bot.send_message(
                     chat_id=self.tree.user.id,
@@ -411,12 +405,10 @@ class ChangeLuck(State):
                     reply_markup=admin_change_luck_kb,
                 )
             else:
-                from Bot.models.user import UserLuck
                 from Bot.models.db import DB
 
-                f1, f2, f3 = fs
                 user = DB.get_user_by_code(self.code)
-                user.luck = UserLuck(f1, f2, f3)
+                user.winchance = fs
                 await self.tree.user.bot.send_message(
                     chat_id=self.tree.user.id,
                     text=f'Данные установлены',
@@ -426,16 +418,10 @@ class ChangeLuck(State):
                 await self.tree.set_state_by_name(self.return_to, bundle)
 
 
-    def parse_three_floats(input_string: str):
+    def parse_float(input_string: str):
         try:
-            parts = input_string.split()
-            
-            if len(parts) != 3:
-                return None
-            
-            floats = tuple(float(part) for part in parts)
-            
-            return floats
+            f = float(input_string)
+            return f
         except ValueError:
             return None
 

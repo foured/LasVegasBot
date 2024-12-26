@@ -105,7 +105,7 @@ class ChooseSlotState(State):
                 from Net.connection import MachineState
 
                 user = self.tree.user
-                pocket = UserConnection(user.data.code, user.data.money, user.luck.winchance, user.luck.jackpot, user.luck.monkey)
+                pocket = UserConnection(user.data.code, user.data.money, user.winchance,)
                 connection = Shared.server.get_connectin(fid)
                 connection.writer.write(pocket.to_bytearray())
                 connection.state = MachineState.BUSY

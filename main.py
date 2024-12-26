@@ -4,8 +4,6 @@ from Net.server import Server
 from Bot.bot_main import *
 from shared import Shared
 
-from config import ConfigManager
-
 async def main():
     server = Server()
     Shared.server = server
@@ -16,5 +14,4 @@ async def main():
     await bot_task
 
 if __name__ == '__main__':
-    ConfigManager.inilialize()
     asyncio.run(main())

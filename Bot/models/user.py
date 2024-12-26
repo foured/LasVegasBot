@@ -7,7 +7,7 @@ from Bot.state_machine.states.admin import *
 from Bot.state_machine.states.registered import *
 from Bot.models.uniq_codes import CodeGenerator
 
-from config import ConfigManager
+from config import WINCHANCE
 
 import enum
 
@@ -32,25 +32,12 @@ class UserData:
     def from_dict(data):
         return UserData(code=data['code'], money=data.get('money', 0))
 
-class UserLuck:
-    def __init__(self, winchance: float, jackpot: float, monkey: float):
-        self.winchance: float = winchance
-        self.jackpot: float = jackpot
-        self.monkey: float = monkey
-
-    def to_dict(self):
-        return { 'winchance': self.winchance, 'jackpot': self.jackpot, 'monkey': self.monkey }
-    
-    @staticmethod
-    def from_dict(data):
-        return UserLuck(winchance=data['winchance'], jackpot=data['jackpot'], monkey=data['monkey'])
-
 class User():
-    def __init__(self, id: str, bot: Bot, data: UserData = None, luck: UserLuck = None, rights: UserRights = UserRights.UNREGISTERED) -> None:
+    def __init__(self, id: str, bot: Bot, data: UserData = None, winchance: float = None, rights: UserRights = UserRights.UNREGISTERED) -> None:
         self.id = id
         self.bot = bot
         self.data = data if data else UserData(-1)
-        self.luck = luck if luck else ConfigManager.default_luck()
+        self.winchance = winchance if winchance else WINCHANCE
         self.tree = StateTree(self)
         self.rights = rights
         self.substate = UserSubstate.AFK
@@ -98,16 +85,15 @@ class User():
         return {
             'id': self.id,
             'data': self.data.to_dict(),
-            'luck': self.luck.to_dict(),
+            'winchance': self.winchance,
             'rights': self.rights.name
         }
     
     @staticmethod
     async def from_dict(data, bot: Bot):
         user_data = UserData.from_dict(data['data'])
-        user_luck = UserLuck.from_dict(data['luck'])
         rights = UserRights[data['rights']]
-        user = User(id=data['id'], bot=bot, data=user_data, luck=user_luck, rights=rights)
+        user = User(id=data['id'], bot=bot, data=user_data, winchance=data['winchance'], rights=rights)
         CodeGenerator.codes.add(user.data.code)
         match user.rights:
             case UserRights.UNREGISTERED:

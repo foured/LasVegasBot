@@ -10,6 +10,7 @@ async def bot_main():
     bot = Bot('7561117864:AAF4hh7IZ_zHIIvI4OULfGk6k_FrOhILNWU')
     Shared.bot = bot
     dp = Dispatcher()
+    DB.do_log = False
     DB.initialize(bot)
     await DB.load()
     dp.include_routers(
